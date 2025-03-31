@@ -22,35 +22,35 @@ HR System
 - Possible Integrations (Email, Calendar, etc.)
 
 ## Setup Project Structure
-hr_system/ 
-├── app/
-│   ├── api/
-│   │   ├── v1/
-│   │   │   ├── endpoints/
-│   │   │   │   ├── employees.py
-│   │   │   │   ├── auth.py
-│   │   │   │   ├── leave.py
-│   │   │   │   └── ...
-│   │   │   └── __init__.py
-│   │   └── __init__.py
-│   ├── core/
-│   │   ├── config.py
-│   │   ├── security.py
-│   │   └── __init__.py
-│   ├── db/
-│   │   ├── models/
-│   │   │   ├── employee.py
-│   │   │   ├── user.py
-│   │   │   └── ...
-│   │   ├── session.py
-│   │   └── __init__.py
-│   ├── schemas/
-│   │   ├── employee.py
-│   │   ├── user.py
-│   │   └── ...
-│   └── __init__.py
-├── requirements.txt
-└── main.py
+    hr_system/ 
+    ├── app/
+    │   ├── api/
+    │   │   ├── v1/
+    │   │   │   ├── endpoints/
+    │   │   │   │   ├── employees.py
+    │   │   │   │   ├── auth.py
+    │   │   │   │   ├── leave.py
+    │   │   │   │   └── ...
+    │   │   │   └── __init__.py
+    │   │   └── __init__.py
+    │   ├── core/
+    │   │   ├── config.py
+    │   │   ├── security.py
+    │   │   └── __init__.py
+    │   ├── db/
+    │   │   ├── models/
+    │   │   │   ├── employee.py
+    │   │   │   ├── user.py
+    │   │   │   └── ...
+    │   │   ├── session.py
+    │   │   └── __init__.py
+    │   ├── schemas/
+    │   │   ├── employee.py
+    │   │   ├── user.py
+    │   │   └── ...
+    │   └── __init__.py
+    ├── requirements.txt
+    └── main.py
 
 ## Key FastAPI Features to Leverage
 1. Automatic API documentation (Swagger UI and ReDoc)
