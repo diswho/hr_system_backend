@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers and settings
-from app.api.v1.endpoints import employees, auth
+from app.api.v1.endpoints import employees, auth, leave,department, position # Import leave router
 from app.core.config import settings
 
 app = FastAPI(
@@ -25,6 +25,9 @@ if settings.BACKEND_CORS_ORIGINS:
 # --- Routers ---
 app.include_router(auth.router)
 app.include_router(employees.router)
+app.include_router(leave.router) # Include leave router
+app.include_router(department.router)
+app.include_router(position.router)
 # Add other routers here (e.g., departments, internal) as needed
 
 @app.get("/")

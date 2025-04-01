@@ -97,5 +97,8 @@ The key tables typically include:
     .\.venv\Scripts\activate
     pip install -r requirements.txt
 
+## Initial Database
+    python -m app.db.init_db
+    
 ## Run system
     uvicorn main:app --reload
