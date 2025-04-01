@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Annotated
 
 # Import models and security functions from the new locations
-from ..models.employee import Employee, EmployeeCreate
-from ..models.user import UserInDB
-from ..security import get_current_active_user, require_role
+from app.db.models.employee import Employee
+from app.schemas.employee import EmployeeCreate
+from app.schemas.user import UserInDB # Assuming UserInDB is a schema
+from app.core.security import get_current_active_user, require_role
 
 router = APIRouter(
     prefix="/employees",

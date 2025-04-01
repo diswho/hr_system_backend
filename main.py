@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers and settings
-from .routers import employees, auth
-from .config import settings
+from app.api.v1.endpoints import employees, auth
+from app.core.config import settings
 
 app = FastAPI(
     title=settings.PROJECT_NAME, # Use project name from settings

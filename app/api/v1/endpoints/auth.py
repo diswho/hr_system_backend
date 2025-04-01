@@ -3,14 +3,15 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from datetime import timedelta
 
-# Import models and security functions from the new locations
-from ..models.user import Token, UserInDB
-from ..security import (
-    ACCESS_TOKEN_EXPIRE_MINUTES,
+# Import schemas, security functions, and settings
+from app.schemas.token import Token
+from app.schemas.user import UserInDB
+from app.core.security import (
     authenticate_user,
     create_access_token,
     get_current_active_user,
 )
+from app.core.config import settings # Import settings
 
 router = APIRouter(
     prefix="/auth", # Changed prefix to /auth
@@ -33,7 +34,7 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES) # Use settings
     access_token = create_access_token(
         data={"sub": user.username, "scopes": [role.name for role in user.roles]},
         expires_delta=access_token_expires,
