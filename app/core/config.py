@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, field_validator, ValidationInfo
 
 class Settings(BaseSettings):
     # Define your settings fields here, matching the .env variables
@@ -31,13 +31,15 @@ class Settings(BaseSettings):
     # Construct database URL (adjust if using a different DB)
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
 
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: dict) -> str:
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode='before')
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str], info: ValidationInfo) -> str:
         if isinstance(v, str):
             return v
+        # Access other values via info.data
         return (
-            f"postgresql+psycopg2://{values.get('POSTGRES_USER')}:{values.get('POSTGRES_PASSWORD')}"
-            f"@{values.get('POSTGRES_SERVER')}:{values.get('POSTGRES_PORT')}/{values.get('POSTGRES_DB')}"
+            f"postgresql+psycopg2://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}"
+            f"@{info.data.get('POSTGRES_SERVER')}:{info.data.get('POSTGRES_PORT')}/{info.data.get('POSTGRES_DB')}"
         )
 
     # Configure Pydantic BaseSettings
