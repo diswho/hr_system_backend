@@ -1,43 +1,61 @@
-from sqlalchemy import Column, Integer, String, Date, Float, ForeignKey
-from sqlalchemy.orm import relationship
+from datetime import date
+from typing import List, Optional
 
-# Assuming Base is defined in session.py or a similar base file
-from app.db.session import Base
-# Import User model if needed for relationships (e.g., employee linked to a user account)
-# from .user import User # Example
+from sqlmodel import Field, Relationship, SQLModel
 
-class Employee(Base):
+# Forward references for relationships
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .position import Position
+    from .department import Department
+    from .leave import LeaveRequest
+    from .user import User
+
+
+class Employee(SQLModel, table=True):
     __tablename__ = "employees"
 
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    phone = Column(String(20), nullable=True)
-    hire_date = Column(Date, nullable=False)
-    job_title = Column(String(100), nullable=False)
-    position_id = Column(Integer, ForeignKey("positions.id"), nullable=True)
-    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
-    salary = Column(Float, nullable=True)
-    
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    first_name: str = Field(max_length=50)
+    last_name: str = Field(max_length=50)
+    email: str = Field(unique=True, index=True)
+    phone: str | None = Field(default=None, max_length=20)
+    hire_date: date
+    job_title: str = Field(max_length=100)
+    salary: float | None = Field(default=None)
+
+    # Foreign Keys
+    position_id: int | None = Field(default=None, foreign_key="positions.id", index=True)
+    department_id: int | None = Field(default=None, foreign_key="departments.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="users.id", index=True, nullable=True) # Foreign key to User
+
     # Relationships
-    position = relationship("Position")
-    department = relationship("Department")
-
-    # Optional: Link to a user account if applicable
-    # user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Example
-    # user = relationship("User", back_populates="employee_profile") # Example
-
-    # Relationship to LeaveRequest
-    # The 'LeaveRequest' model should have `employee = relationship("Employee", back_populates="leave_requests")`
-    leave_requests = relationship("LeaveRequest", back_populates="employee", cascade="all, delete-orphan")
+    position: Optional["Position"] = Relationship(back_populates="employees") # Assuming 'employees' in Position model
+    department: Optional["Department"] = Relationship(back_populates="employees") # Assuming 'employees' in Department model
+    leave_requests: List["LeaveRequest"] = Relationship(back_populates="employee")
+    user: Optional["User"] = Relationship(back_populates="employee_profile") # Link back to User
 
     def __repr__(self):
         return f"<Employee(id={self.id}, name='{self.first_name} {self.last_name}')>"
 
-# Ensure the related User model (if used) has the corresponding relationship:
-# Example for app/db/models/user.py:
-# from sqlalchemy.orm import relationship
-# class User(Base):
-#     # ... other columns ...
-#     employee_profile = relationship("Employee", back_populates="user", uselist=False) # Example for one-to-one
+# Notes for related models (ensure they are also SQLModel and have correct back_populates):
+# In app/db/models/position.py:
+# class Position(SQLModel, table=True):
+#     # ... other fields
+#     employees: List["Employee"] = Relationship(back_populates="position")
+
+# In app/db/models/department.py:
+# class Department(SQLModel, table=True):
+#     # ... other fields
+#     employees: List["Employee"] = Relationship(back_populates="department")
+
+# In app/db/models/leave.py:
+# class LeaveRequest(SQLModel, table=True):
+#     # ... other fields
+#     employee_id: Optional[int] = Field(default=None, foreign_key="employees.id")
+#     employee: Optional["Employee"] = Relationship(back_populates="leave_requests")
+
+# In app/db/models/user.py (if used):
+# class User(SQLModel, table=True):
+#     # ... other fields
+#     employee_profile: Optional["Employee"] = Relationship(back_populates="user") # One-to-one if uselist=False was intended

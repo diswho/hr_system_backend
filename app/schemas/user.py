@@ -1,32 +1,46 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from pydantic import BaseModel, Field, ConfigDict
+from typing import List
 
-# Schema for User Role
-class UserRole(BaseModel):
-    name: str
+from .role import RoleRead # Import the Role schema for reading
 
-# Base schema with common attributes
+# --- Pydantic Models for Authentication/Users ---
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+    scopes: List[str] = []  # For role-based access later
+
+
+# Removed old UserRole class, using RoleRead now
+
+
 class UserBase(BaseModel):
-    username: str
-    email: EmailStr
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = False
-    roles: List[UserRole] = [] # Updated to use UserRole schema
+    username: str = Field(..., min_length=3)
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+    # Roles will be populated from the relationship via UserRoleLink
+    roles: List[RoleRead] = []
 
-# Schema for creating a user (used for input)
-class UserCreate(UserBase):
-    password: str
+    # Add Config class to enable ORM mode (from_attributes)
+    model_config = ConfigDict(from_attributes=True)
 
-# Schema for reading/representing a user in API responses
-class User(UserBase):
-    id: int
 
-    class Config:
-        from_attributes = True # For ORM mode
+class UserCreate(BaseModel): # Inherit directly from BaseModel for creation
+    # Fields required for creation
+    username: str = Field(..., min_length=3)
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = False # Default to False
+    password: str = Field(..., min_length=8)
+    # Accept role IDs during creation
+    role_ids: List[int] | None = None
 
-# Schema representing a user as stored in the database
-# Often includes fields like hashed_password
-class UserInDB(User):
-    hashed_password: str
-    # Ensure roles here also uses UserRole if needed for consistency,
-    # although it inherits from User which already has the updated roles.
+
+class UserInDB(UserBase): # Inherits roles from UserBase
+    hashed_password: str  # Stored in the database

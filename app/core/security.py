@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 
 # Import models from the new location
 from app.schemas.token import Token, TokenData
-from app.schemas.user import UserInDB, UserRole
+from app.schemas.user import UserInDB # UserRole removed
 # Import settings
 from app.core.config import settings
 
@@ -55,7 +55,8 @@ fake_users_db: dict[str, UserInDB] = {
         email=settings.FIRST_SUPERUSER,
         hashed_password=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
         disabled=False,
-        roles=[UserRole(name="admin"), UserRole(name="manager"), UserRole(name="employee")]
+        # Mock roles matching RoleRead structure (at least id and name)
+        roles=[{"id": 1, "name": "admin"}, {"id": 2, "name": "manager"}, {"id": 3, "name": "employee"}]
     ),
      "manager1": UserInDB(
         id=2, # Added ID
@@ -64,7 +65,7 @@ fake_users_db: dict[str, UserInDB] = {
         email="manager1@example.com",
         hashed_password=get_password_hash("managerpass"),
         disabled=False,
-        roles=[UserRole(name="manager"), UserRole(name="employee")]
+        roles=[{"id": 2, "name": "manager"}, {"id": 3, "name": "employee"}]
     ),
     "employee1": UserInDB(
         id=3, # Added ID
@@ -73,7 +74,7 @@ fake_users_db: dict[str, UserInDB] = {
         email="employee1@example.com",
         hashed_password=get_password_hash("employeepass"),
         disabled=False,
-        roles=[UserRole(name="employee")]
+        roles=[{"id": 3, "name": "employee"}]
     )
 }
 
