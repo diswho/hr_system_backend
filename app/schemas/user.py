@@ -44,3 +44,12 @@ class UserCreate(BaseModel): # Inherit directly from BaseModel for creation
 
 class UserInDB(UserBase): # Inherits roles from UserBase
     hashed_password: str  # Stored in the database
+
+
+class UserUpdate(BaseModel):
+    """Schema for updating a user. All fields are optional."""
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+    password: str | None = Field(default=None, min_length=8) # Optional password update
+    role_ids: List[int] | None = None # Optional role update

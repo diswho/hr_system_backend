@@ -5,8 +5,11 @@ from sqlmodel import Session
 from app import crud
 from app.schemas.role import RoleRead, RoleCreate
 from app.db.session import get_db # Correct import for DB session
+from app.core.security import require_role # Import the role checker dependency
 
-router = APIRouter()
+router = APIRouter(
+    dependencies=[Depends(require_role("system"))] # Apply role check to all role endpoints
+)
 
 @router.post("/", response_model=RoleRead, status_code=status.HTTP_201_CREATED)
 def create_role_endpoint(
