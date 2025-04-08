@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from datetime import timedelta
+from sqlalchemy.orm import Session # Import Session
 
 # Import schemas, security functions, and settings
 from app.schemas.token import Token
@@ -17,17 +18,19 @@ router = APIRouter(
     prefix="/auth", # Changed prefix to /auth
     tags=["authentication"],
 )
+from app.db.session import get_db # Import get_db dependency
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Session = Depends(get_db) # Add DB session dependency
 ):
     """
     Provides an access token for valid user credentials.
 
     Uses OAuth2 Password Flow.
     """
-    user = authenticate_user(form_data.username, form_data.password)
+    user = authenticate_user(db=db, username=form_data.username, password=form_data.password) # Pass db session
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

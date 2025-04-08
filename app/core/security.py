@@ -5,32 +5,37 @@ from typing import Optional, List, Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+# from passlib.context import CryptContext # Moved to hashing.py
+from sqlalchemy.orm import Session # Import Session
+from app.core.hashing import verify_password # Import from new hashing module
 
 # Import models from the new location
 from app.schemas.token import Token, TokenData
-from app.schemas.user import UserInDB # UserRole removed
+from app.schemas.user import UserInDB # Keep UserInDB
+# from app.db.models.user import User # Don't need User model directly here anymore
+from app import crud # Import crud module
+from app.db.session import get_db # Import get_db dependency
 # Import settings
 from app.core.config import settings
 
 # --- Configuration (Now loaded from settings) ---
 ALGORITHM = "HS256" # Keep algorithm hardcoded for now, or add to Settings
 
-# --- Password Hashing ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# --- Password Hashing (Moved to app/core/hashing.py) ---
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto") # Moved
 
 # --- OAuth2 Scheme ---
 # tokenUrl points to the endpoint that provides the token (defined in routers.auth)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token") # Updated tokenUrl path
 
-# --- Utility Functions ---
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifies a plain password against a hashed password."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    """Hashes a plain password."""
-    return pwd_context.hash(password)
+# --- Utility Functions (Moved to app/core/hashing.py) ---
+# def verify_password(plain_password: str, hashed_password: str) -> bool: # Moved
+#     """Verifies a plain password against a hashed password.""" # Moved
+#     return pwd_context.verify(plain_password, hashed_password) # Moved
+#
+# def get_password_hash(password: str) -> str: # Moved
+#     """Hashes a plain password.""" # Moved
+#     return pwd_context.hash(password) # Moved
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Creates a JWT access token."""
@@ -43,64 +48,43 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM) # Use settings
     return encoded_jwt
 
-# --- Mock User Database (Replace with real DB access) ---
-# This is highly insecure and just for demonstration!
-# TODO: Move this to a separate data layer or database module
-# Initialize with the superuser from settings
-fake_users_db: dict[str, UserInDB] = {
-    settings.FIRST_SUPERUSER: UserInDB(
-        id=1, # Added ID
-        username=settings.FIRST_SUPERUSER,
-        full_name="Admin User",
-        email=settings.FIRST_SUPERUSER,
-        hashed_password=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
-        disabled=False,
-        # Mock roles matching RoleRead structure (at least id and name)
-        roles=[{"id": 1, "name": "admin"}, {"id": 2, "name": "manager"}, {"id": 3, "name": "employee"}]
-    ),
-     "manager1": UserInDB(
-        id=2, # Added ID
-        username="manager1",
-        full_name="Manager One",
-        email="manager1@example.com",
-        hashed_password=get_password_hash("managerpass"),
-        disabled=False,
-        roles=[{"id": 2, "name": "manager"}, {"id": 3, "name": "employee"}]
-    ),
-    "employee1": UserInDB(
-        id=3, # Added ID
-        username="employee1",
-        full_name="Employee One",
-        email="employee1@example.com",
-        hashed_password=get_password_hash("employeepass"),
-        disabled=False,
-        roles=[{"id": 3, "name": "employee"}]
-    )
-}
-
-def get_user(username: str) -> Optional[UserInDB]:
-    """Retrieves a user from the fake database."""
-    # TODO: Replace with actual database query
-    if username in fake_users_db:
-        user_data = fake_users_db[username]
-        # Ensure we return a UserInDB instance, Pydantic might handle this if dict is compatible
-        # but explicit instantiation is safer if needed.
-        return UserInDB(**user_data.model_dump())
+# --- Database User Retrieval ---
+# Removed fake_users_db
+def get_user(db: Session = Depends(get_db), username: str = "") -> UserInDB | None:
+    """Retrieves a user from the database by username."""
+    if not username: # Handle empty username case if necessary
+        return None
+    db_user = crud.user.get_user_by_username(db=db, username=username)
+    if db_user:
+        # Pydantic's from_attributes should handle the conversion
+        # because crud.user.get_user_by_username now eagerly loads roles
+        # and UserInDB expects roles: List[RoleRead]
+        # However, Pydantic needs the actual Role objects, not UserRoleLink objects.
+        # We need to extract the Role objects from the links.
+        user_roles = [link.role for link in db_user.role_links if link.role] # Extract Role objects
+        user_data = db_user.model_dump() # Get user data as dict
+        user_data['roles'] = user_roles # Assign the extracted Role objects to the 'roles' key
+        return UserInDB(**user_data) # Create UserInDB instance
     return None
 
 # --- Authentication Function ---
-def authenticate_user(username: str, password: str) -> Optional[UserInDB]:
-    """Authenticates a user by checking username and password."""
-    user = get_user(username)
+# --- Authentication Function ---
+# Note: The db session needs to be passed to this function from the caller (e.g., the token endpoint)
+def authenticate_user(db: Session, username: str, password: str) -> UserInDB | None:
+    """Authenticates a user by checking username and password against the DB."""
+    user = get_user(db=db, username=username) # Pass db session to get_user
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.hashed_password): # Uses imported verify_password
         return None
     return user
 
 # --- Dependencies for Getting Current User ---
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInDB:
-    """Decodes the token, validates credentials, and returns the user."""
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db) # Inject DB session here
+) -> UserInDB:
+    """Decodes the token, validates credentials, and returns the user from DB."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -115,7 +99,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     except JWTError:
         raise credentials_exception
 
-    user = get_user(username=token_data.username)
+    # Use the modified get_user function which now requires a db session
+    user = get_user(db=db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -132,9 +117,11 @@ async def get_current_active_user(
 def require_role(required_role: str):
     """Dependency factory to check if the current user has a specific role."""
     async def role_checker(current_user: Annotated[UserInDB, Depends(get_current_active_user)]) -> UserInDB:
-        if not any(role.name == required_role for role in current_user.roles):
+        # Access roles directly from the UserInDB object
+        user_roles = current_user.roles
+        if not any(role.name == required_role for role in user_roles):
             # Allow admins implicitly
-            if not any(role.name == "admin" for role in current_user.roles):
+            if not any(role.name == "admin" for role in user_roles):
                  raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"User does not have the required '{required_role}' or 'admin' role"

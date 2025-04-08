@@ -1,14 +1,16 @@
-from sqlalchemy.orm import Session # Use SQLAlchemy Session type hint
+from sqlalchemy.orm import Session, joinedload # Use SQLAlchemy Session type hint, Import joinedload
 from sqlmodel import select # Keep select from sqlmodel
 from typing import List
 from fastapi import HTTPException, status # Import HTTPException
 
 from app.db.models.user import User
 from app.db.models.user_role_link import UserRoleLink # Import link model
+from app.db.models.role import Role # Import Role model for joinedload path
 from app.schemas.user import UserCreate
 from app import crud # Import crud module to access role CRUD
+from app.core.hashing import get_password_hash # Import from new hashing module
 # Assume security functions exist for password hashing
-from app.core.security import get_password_hash # Placeholder import
+# from app.core.security import get_password_hash # Removed import from security
 
 def get_user(db: Session, user_id: int) -> User | None:
     """Gets a single user by ID."""
@@ -16,10 +18,16 @@ def get_user(db: Session, user_id: int) -> User | None:
     return user
 
 def get_user_by_username(db: Session, username: str) -> User | None:
-    """Gets a single user by username."""
-    statement = select(User).where(User.username == username)
+    """Gets a single user by username, eagerly loading roles."""
+    statement = (
+        select(User)
+        .where(User.username == username)
+        # Eagerly load roles through the link table
+        .options(joinedload(User.role_links).joinedload(UserRoleLink.role))
+    )
     result = db.execute(statement)
-    user = result.scalars().first()
+    # Use unique().scalars().first() to handle potential duplicate User rows from joins
+    user = result.unique().scalars().first()
     return user
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
