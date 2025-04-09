@@ -121,10 +121,13 @@ def require_role(required_role: str):
         user_roles = current_user.roles
         if not any(role.name == required_role for role in user_roles):
             # Allow admins implicitly
-            if not any(role.name == "admin" for role in user_roles):
-                 raise HTTPException(
+            # if not any(role.name == "admin" for role in user_roles):
+            #      raise HTTPException(
+            #         status_code=status.HTTP_403_FORBIDDEN,
+            #         detail=f"User does not have the required '{required_role}' or 'admin' role"
+            #     )
+            raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"User does not have the required '{required_role}' or 'admin' role"
-                )
+                    detail=f"User does not have the required '{required_role}' role")
         return current_user
     return role_checker

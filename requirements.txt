@@ -8,3 +8,4 @@ bcrypt<4.1.0 # Added constraint for passlib 1.7.4 compatibility
 pydantic-settings>=2.0.0,<3.0.0 # Added for loading .env
 psycopg2-binary>=2.9.0,<3.0.0 # Added for PostgreSQL connection
 SQLAlchemy>=2.0.0,<3.0.0 # Added for database ORM
+sqlmodel==0.0.24

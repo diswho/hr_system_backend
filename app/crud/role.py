@@ -26,6 +26,11 @@ def get_roles(db: Session, skip: int = 0, limit: int = 100) -> List[Role]:
 
 def create_role(db: Session, *, role_in: RoleCreate) -> Role:
     """Creates a new role."""
+    # Check for existing role with same name
+    existing_role = get_role_by_name(db, role_in.name)
+    if existing_role:
+        raise ValueError(f"Role with name '{role_in.name}' already exists")
+    
     db_role = Role.model_validate(role_in) # Use model_validate for SQLModel >= 0.0.14
     # For older SQLModel: db_role = Role.from_orm(role_in)
     db.add(db_role)

@@ -1,7 +1,9 @@
--- DROP TABLE IF EXISTS leave_requests;
--- DROP TABLE IF EXISTS employees;
--- DROP TABLE IF EXISTS departments;
--- DROP TABLE IF EXISTS positions;
--- DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS leave_requests;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS positions;
+DROP TABLE IF EXISTS user_role_link;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS users;
 
-SELECT * FROM positions;
+-- SELECT * FROM positions;
