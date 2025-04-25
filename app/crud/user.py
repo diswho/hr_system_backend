@@ -1,21 +1,23 @@
-from sqlalchemy.orm import Session, joinedload # Use SQLAlchemy Session type hint, Import joinedload
-from sqlmodel import select # Keep select from sqlmodel
+from sqlalchemy.orm import Session, joinedload  # Use SQLAlchemy Session type hint, Import joinedload
+from sqlmodel import select  # Keep select from sqlmodel
 from typing import List
-from fastapi import HTTPException, status # Import HTTPException
+from fastapi import HTTPException, status  # Import HTTPException
 
 from app.db.models.user import User
-from app.db.models.user_role_link import UserRoleLink # Import link model
-from app.db.models.role import Role # Import Role model for joinedload path
-from app.schemas.user import UserCreate, UserUpdate # Import UserUpdate
-from app import crud # Import crud module to access role CRUD
-from app.core.hashing import get_password_hash # Import from new hashing module
+from app.db.models.user_role_link import UserRoleLink  # Import link model
+from app.db.models.role import Role  # Import Role model for joinedload path
+from app.schemas.user import UserCreate, UserUpdate  # Import UserUpdate
+from app import crud  # Import crud module to access role CRUD
+from app.core.hashing import get_password_hash  # Import from new hashing module
 # Assume security functions exist for password hashing
 # from app.core.security import get_password_hash # Removed import from security
+
 
 def get_user(db: Session, user_id: int) -> User | None:
     """Gets a single user by ID."""
     user = db.get(User, user_id)
     return user
+
 
 def get_user_by_username(db: Session, username: str) -> User | None:
     """Gets a single user by username, eagerly loading roles."""
@@ -23,36 +25,38 @@ def get_user_by_username(db: Session, username: str) -> User | None:
         select(User)
         .where(User.username == username)
         # Eagerly load roles through the link table
-        .options(joinedload(User.role_links).joinedload(UserRoleLink.role))
+        # .options(joinedload(User.role_links).joinedload(UserRoleLink.role))
     )
     result = db.execute(statement)
     # Use unique().scalars().first() to handle potential duplicate User rows from joins
     user = result.unique().scalars().first()
     return user
 
+
 def get_users(
     db: Session,
     skip: int = 0,
     limit: int = 100,
-    role_name: str | None = None # Add optional role_name filter
+    role_name: str | None = None  # Add optional role_name filter
 ) -> List[User]:
     """Gets multiple users with pagination, optionally filtering by role name."""
-    statement = select(User).distinct() # Select distinct users
+    statement = select(User).distinct()  # Select distinct users
 
     if role_name:
         # Join through the link table to filter by Role name
         statement = (
             statement
-            .join(User.role_links) # User -> UserRoleLink relationship
-            .join(UserRoleLink.role) # UserRoleLink -> Role relationship
-            .where(Role.name == role_name) # Filter on Role.name
+            .join(User.role_links)  # User -> UserRoleLink relationship
+            .join(UserRoleLink.role)  # UserRoleLink -> Role relationship
+            .where(Role.name == role_name)  # Filter on Role.name
         )
 
-    statement = statement.offset(skip).limit(limit) # Apply pagination
+    statement = statement.offset(skip).limit(limit)  # Apply pagination
 
     result = db.execute(statement)
     users = result.scalars().all()
     return users
+
 
 def create_user(db: Session, *, user_in: UserCreate) -> User:
     """Creates a new user and links roles if provided."""
@@ -61,7 +65,7 @@ def create_user(db: Session, *, user_in: UserCreate) -> User:
     user_data = user_in.model_dump(exclude={"password", "role_ids"})
     db_user = User(**user_data, hashed_password=hashed_password)
     db.add(db_user)
-    db.commit() # Commit user first to get an ID
+    db.commit()  # Commit user first to get an ID
     db.refresh(db_user)
 
     # Link roles if role_ids are provided
@@ -78,8 +82,8 @@ def create_user(db: Session, *, user_in: UserCreate) -> User:
                 # continue
             link = UserRoleLink(user_id=db_user.id, role_id=role.id)
             db.add(link)
-        db.commit() # Commit the links
-        db.refresh(db_user) # Refresh again to load the relationships
+        db.commit()  # Commit the links
+        db.refresh(db_user)  # Refresh again to load the relationships
 
     return db_user
 
@@ -97,11 +101,11 @@ def update_user(db: Session, *, user_id: int, user_in: UserUpdate) -> User | Non
     if "password" in update_data and update_data["password"]:
         hashed_password = get_password_hash(update_data["password"])
         db_user.hashed_password = hashed_password
-        del update_data["password"] # Remove from dict to avoid direct assignment
+        del update_data["password"]  # Remove from dict to avoid direct assignment
 
     # Handle role updates
     if "role_ids" in update_data:
-        role_ids = update_data.pop("role_ids") # Get and remove role_ids
+        role_ids = update_data.pop("role_ids")  # Get and remove role_ids
         # Clear existing roles for this user
         existing_links = db.execute(
             select(UserRoleLink).where(UserRoleLink.user_id == db_user.id)
@@ -125,7 +129,6 @@ def update_user(db: Session, *, user_id: int, user_in: UserUpdate) -> User | Non
                 db.add(link)
         # Commit role changes before refreshing
         db.commit()
-
 
     # Update remaining fields
     for field, value in update_data.items():
