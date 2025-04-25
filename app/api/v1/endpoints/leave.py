@@ -1,17 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Annotated
-from sqlalchemy.orm import Session # Import Session
+from sqlalchemy.orm import Session  # Import Session
 
 # Import schemas, security functions, CRUD, and DB dependency
 from app.schemas.leave import LeaveRequest, LeaveRequestCreate, LeaveStatus
 from app.schemas.user import UserInDB
 from app.core.security import get_current_active_user, require_role
-from app.crud import crud_leave # Import leave CRUD functions
-from app.db.session import get_db # Import DB session dependency (adjust path if needed)
+from app.crud import crud_leave  # Import leave CRUD functions
+from app.db.session import get_db  # Import DB session dependency (adjust path if needed)
 
 router = APIRouter(
     prefix="/leave",
     tags=["leave"],
+    # dependencies=[Depends(require_role(["user"]))],
     responses={404: {"description": "Not found"}},
 )
 
@@ -20,12 +21,14 @@ router = APIRouter(
 # --- Leave Request Endpoints ---
 
 # Requires at least 'employee' role to create a request
+
+
 @router.post("/", response_model=LeaveRequest, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(require_role("employee"))])
+             dependencies=[Depends(require_role(["employee"]))])
 async def create_leave_request(
     leave_request: LeaveRequestCreate,
     current_user: Annotated[UserInDB, Depends(get_current_active_user)],
-    db: Session = Depends(get_db) # Moved DB session dependency to the end
+    db: Session = Depends(get_db)  # Moved DB session dependency to the end
 ):
     """Creates a new leave request in the database."""
     # Removed global ID logic
@@ -46,13 +49,15 @@ async def create_leave_request(
     return db_leave_request
 
 # Requires 'manager' or 'admin' role to view all requests
+
+
 @router.get("/", response_model=List[LeaveRequest],
-            dependencies=[Depends(require_role("manager"))])
+            dependencies=[Depends(require_role(["manager"]))])
 async def read_all_leave_requests(
     current_user: Annotated[UserInDB, Depends(get_current_active_user)],
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db) # Moved DB session dependency to the end
+    db: Session = Depends(get_db)  # Moved DB session dependency to the end
 ):
     """Retrieves a list of all leave requests (manager/admin access)."""
     # Retrieve requests using CRUD function
@@ -61,12 +66,14 @@ async def read_all_leave_requests(
 
 # Requires at least 'employee' role to view a specific request
 # TODO: Add logic to ensure employees can only view their own requests unless manager/admin
+
+
 @router.get("/{request_id}", response_model=LeaveRequest,
-            dependencies=[Depends(require_role("employee"))])
+            dependencies=[Depends(require_role(["employee"]))])
 async def read_leave_request(
     request_id: int,
     current_user: Annotated[UserInDB, Depends(get_current_active_user)],
-    db: Session = Depends(get_db) # Moved DB session dependency to the end
+    db: Session = Depends(get_db)  # Moved DB session dependency to the end
 ):
     """Retrieves a specific leave request by its ID."""
     # Retrieve request using CRUD function

@@ -114,20 +114,19 @@ async def get_current_active_user(
     return current_user
 
 # --- Dependency for Role Checking ---
-def require_role(required_role: str):
-    """Dependency factory to check if the current user has a specific role."""
+def require_role(required_roles: List[str]): # Accept a list of roles
+    """Dependency factory to check if the current user has at least one of the specified roles."""
     async def role_checker(current_user: Annotated[UserInDB, Depends(get_current_active_user)]) -> UserInDB:
         # Access roles directly from the UserInDB object
         user_roles = current_user.roles
-        if not any(role.name == required_role for role in user_roles):
-            # Allow admins implicitly
-            # if not any(role.name == "admin" for role in user_roles):
-            #      raise HTTPException(
-            #         status_code=status.HTTP_403_FORBIDDEN,
-            #         detail=f"User does not have the required '{required_role}' or 'admin' role"
-            #     )
+        # Check if the user has *any* of the required roles
+        user_role_names = {role.name for role in user_roles}
+        if not any(req_role in user_role_names for req_role in required_roles):
+            # Construct a more informative error message
+            roles_str = " or ".join(f"'{r}'" for r in required_roles)
             raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"User does not have the required '{required_role}' role")
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"User does not have the required role(s): {roles_str}"
+            )
         return current_user
     return role_checker

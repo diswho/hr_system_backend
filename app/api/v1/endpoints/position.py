@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from app.core.security import require_role # Added import
 
 from app.db.session import get_db
 from app.crud import crud_position
@@ -9,7 +10,7 @@ from app.schemas.position import Position, PositionCreate, PositionUpdate
 router = APIRouter(
     prefix="/position",
     tags=["position"],
-    # dependencies=[Depends(get_current_active_user)], # Apply auth to all routes in this router
+    dependencies=[Depends(require_role(["system", "admin"]))], # Apply role check to all routes
     responses={404: {"description": "Not found"}},
     )
 

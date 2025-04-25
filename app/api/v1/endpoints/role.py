@@ -4,12 +4,13 @@ from sqlmodel import Session
 
 from app import crud
 from app.schemas.role import RoleRead, RoleCreate
-from app.db.session import get_db # Correct import for DB session
-from app.core.security import require_role # Import the role checker dependency
+from app.db.session import get_db  # Correct import for DB session
+from app.core.security import require_role  # Import the role checker dependency
 
 router = APIRouter(
-    dependencies=[Depends(require_role("system"))] # Apply role check to all role endpoints
+    dependencies=[Depends(require_role(["system"]))]  # Apply role check to all role endpoints
 )
+
 
 @router.post("/", response_model=RoleRead, status_code=status.HTTP_201_CREATED)
 def create_role_endpoint(
@@ -29,6 +30,7 @@ def create_role_endpoint(
     role = crud.role.create_role(db=db, role_in=role_in)
     return role
 
+
 @router.get("/", response_model=List[RoleRead])
 def read_roles_endpoint(
     db: Session = Depends(get_db),
@@ -40,6 +42,7 @@ def read_roles_endpoint(
     """
     roles = crud.role.get_roles(db, skip=skip, limit=limit)
     return roles
+
 
 @router.get("/{role_id}", response_model=RoleRead)
 def read_role_by_id_endpoint(

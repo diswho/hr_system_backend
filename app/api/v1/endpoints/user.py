@@ -3,13 +3,13 @@ from typing import List
 from sqlmodel import Session
 
 from app import crud
-from app.schemas.user import UserBase, UserCreate, UserUpdate # Import UserUpdate schema
+from app.schemas.user import UserBase, UserCreate, UserUpdate  # Import UserUpdate schema
 from app.db.models.user import User  # Import the DB model for response_model if needed, or use schema
 from app.db.session import get_db  # Dependency for DB session
 from app.core.security import require_role  # Import the role checker dependency
 
 router = APIRouter(
-    dependencies=[Depends(require_role("system"))]  # Apply role check to all user endpoints
+    dependencies=[Depends(require_role(["system"]))]  # Apply role check to all user endpoints
 )
 
 # system
@@ -70,6 +70,7 @@ def read_user_by_id_endpoint(
         )
     return user
 
+
 @router.put("/{user_id}", response_model=UserBase)
 def update_user_endpoint(
     *,
@@ -80,7 +81,7 @@ def update_user_endpoint(
     """
     Update a user.
     """
-    user = crud.user.get_user(db, user_id=user_id) # Check if user exists first
+    user = crud.user.get_user(db, user_id=user_id)  # Check if user exists first
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -90,7 +91,7 @@ def update_user_endpoint(
     return updated_user
 
 
-@router.delete("/{user_id}", response_model=UserBase) # Or use status_code=204 and no response_model
+@router.delete("/{user_id}", response_model=UserBase)  # Or use status_code=204 and no response_model
 def delete_user_endpoint(
     *,
     db: Session = Depends(get_db),
@@ -99,11 +100,11 @@ def delete_user_endpoint(
     """
     Delete a user.
     """
-    user = crud.user.get_user(db, user_id=user_id) # Check if user exists first
+    user = crud.user.get_user(db, user_id=user_id)  # Check if user exists first
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="The user with this ID does not exist in the system",
         )
     deleted_user = crud.user.delete_user(db=db, user_id=user_id)
-    return deleted_user # Return the deleted user object
+    return deleted_user  # Return the deleted user object
