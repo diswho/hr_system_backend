@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 
 from .role import RoleRead # Import the Role schema for reading
+from .branch import Branch # <-- Import Branch schema
+from typing import Optional # <-- Ensure Optional is imported
 
 # --- Pydantic Models for Authentication/Users ---
 
@@ -27,6 +29,9 @@ class UserBase(BaseModel):
     # Roles will be populated from the relationship via UserRoleLink
     roles: List[RoleRead] = []
 
+    branch_id: Optional[int] = None # <-- Add branch_id
+    branch: Optional[Branch] = None # <-- Add nested branch for reading
+
     # Add Config class to enable ORM mode (from_attributes)
     model_config = ConfigDict(from_attributes=True)
 
@@ -40,6 +45,7 @@ class UserCreate(BaseModel): # Inherit directly from BaseModel for creation
     password: str = Field(..., min_length=8)
     # Accept role IDs during creation
     role_ids: List[int] | None = None
+    branch_id: Optional[int] = None # <-- Add branch_id for creation
 
 
 class UserInDB(UserBase): # Inherits roles from UserBase
@@ -53,3 +59,4 @@ class UserUpdate(BaseModel):
     disabled: bool | None = None
     password: str | None = Field(default=None, min_length=8) # Optional password update
     role_ids: List[int] | None = None # Optional role update
+    branch_id: Optional[int] = None # <-- Add branch_id for update

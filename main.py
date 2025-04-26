@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers and settings
-from app.api.v1.endpoints import employees, auth, leave, department, position, user, role # Import role router
+from app.api.v1.endpoints import employees, auth, leave, department, position, user, role, branch # Import branch router
 from app.core.config import settings
 
 app = FastAPI(
@@ -30,6 +30,7 @@ app.include_router(department.router)
 app.include_router(position.router)
 app.include_router(user.router, prefix="/api/v1/users", tags=["users"]) # Add user router
 app.include_router(role.router, prefix="/api/v1/roles", tags=["roles"]) # Add role router
+app.include_router(branch.router, prefix="/api/v1/branches", tags=["branches"]) # Add branch router
 # Add other routers here (e.g., departments, internal) as needed
 
 @app.get("/")

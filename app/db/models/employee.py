@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .department import Department
     from .leave import LeaveRequest
     from .user import User
+    from .branch import Branch # <-- Add Branch import
 
 
 class Employee(SQLModel, table=True):
@@ -29,11 +30,15 @@ class Employee(SQLModel, table=True):
     department_id: int | None = Field(default=None, foreign_key="departments.id", index=True)
     user_id: int | None = Field(default=None, foreign_key="users.id", index=True, nullable=True) # Foreign key to User
 
+    branch_id: int | None = Field(default=None, foreign_key="branches.id", index=True) # <-- Add branch_id FK
+
     # Relationships
     position: Optional["Position"] = Relationship(back_populates="employees") # Assuming 'employees' in Position model
     department: Optional["Department"] = Relationship(back_populates="employees") # Assuming 'employees' in Department model
     leave_requests: List["LeaveRequest"] = Relationship(back_populates="employee")
     user: Optional["User"] = Relationship(back_populates="employee_profile") # Link back to User
+
+    branch: Optional["Branch"] = Relationship(back_populates="employees") # <-- Add branch relationship
 
     def __repr__(self):
         return f"<Employee(id={self.id}, name='{self.first_name} {self.last_name}')>"

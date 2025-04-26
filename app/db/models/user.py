@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from .employee import Employee
     from .role import Role
     from .user_role_link import UserRoleLink
+    from .branch import Branch # <-- Add Branch import
 
 
 # Note: Storing roles directly in the User table (e.g., as JSON) is simple but less flexible
@@ -24,12 +25,17 @@ class User(SQLModel, table=True):
     hashed_password: str = Field()
     disabled: bool | None = Field(default=False)
 
+    branch_id: int | None = Field(default=None, foreign_key="branches.id", index=True) # <-- Add branch_id FK
+
     # Relationship to Employee (optional one-to-one)
     # Assumes Employee model has: user: Optional["User"] = Relationship(back_populates="employee_profile")
     employee_profile: Optional["Employee"] = Relationship(back_populates="user") # sa_relationship_kwargs={"uselist": False} might be needed if Employee.user isn't Optional
 
     # Relationship to the link table (UserRoleLink)
     role_links: List["UserRoleLink"] = Relationship(back_populates="user")
+    # Relationship to Branch
+    branch: Optional["Branch"] = Relationship(back_populates="users") # <-- Add branch relationship
+
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}')>"
 
